@@ -27,25 +27,15 @@ async function retreiveDB(prevDate) {
     let count = 0;
     let j = 0;
 
-    let [currHour, currMinute] = fireBaseSplitter(Timestamp.fromDate(new Date()).toDate().toString());
-    let [prevHour, prevMinute] = fireBaseSplitter(prevDate.toString());
+    let [currHour, currMinute, currDay] = fireBaseSplitter(Timestamp.fromDate(new Date()).toDate().toString());
+    let [prevHour, prevMinute, prevDay] = fireBaseSplitter(prevDate.toString());
+    console.log(currDay + " "  + prevDay);
     console.log(currHour + " " + prevHour);
 
     let currTime = timeConverter(currHour, currMinute, currHour < 12 ? 'A' : 'P');
     let prevTime = timeConverter(prevHour, prevMinute, prevHour < 12 ? 'A' : 'P');
-    prevTime = 0;
-    currTime = 1439;
-    try {
-        const data = fs.readFileSync('./ledData.json', 'utf-8');
-        console.log(jsonData);
-    }
-    catch (error) {
-        console.log("No Led Data to be read at the time");
-    }
-
-
-
-
+   
+  
     console.log("Prev Time is: " + prevTime + " and Curr Time is: " + currTime);
 
 
@@ -53,21 +43,59 @@ async function retreiveDB(prevDate) {
     for (i=0; i<24; i++){
         hourMap.set(i,[]);
     }
+    if ((currDay - prevDay) === 0){
+        for (let i = prevTime; i <= currTime; i++) {
 
-    for (let i = prevTime; i <= currTime; i++) {
-
-        if (snapshot.state === 1) {
-            //ledStateData.push({input: {time: i}, output: {off: 0}});
-            hourMap.get(Math.floor(i/60)).push(0);
-            
-            //ledStateData.push({input : {t : i/1440, f : 0}, output : {off : 1}});
-        }
-        else if (snapshot.state === 0) {
-            hourMap.get(Math.floor(i/60)).push(1);
-            //ledStateData.push({input: {time: i}, output: {on: 1}});
-            //ledStateData.push({input : {t : i/1440, f : 0}, output : {on : 1}});
+            if (snapshot.state === 1) {
+                //ledStateData.push({input: {time: i}, output: {off: 0}});
+                hourMap.get(Math.floor(i/60)).push(0);
+                
+                //ledStateData.push({input : {t : i/1440, f : 0}, output : {off : 1}});
+            }
+            else if (snapshot.state === 0) {
+                hourMap.get(Math.floor(i/60)).push(1);
+                //ledStateData.push({input: {time: i}, output: {on: 1}});
+                //ledStateData.push({input : {t : i/1440, f : 0}, output : {on : 1}});
+            }
         }
     }
+    else {
+        let j = 0;
+        while (j <= (currDay - prevDay)){
+            for (let i = prevTime; i <= 1439; i++) {
+
+                if (snapshot.state === 1) {
+                    //ledStateData.push({input: {time: i}, output: {off: 0}});
+                    hourMap.get(Math.floor(i/60)).push(0);
+                    
+                    //ledStateData.push({input : {t : i/1440, f : 0}, output : {off : 1}});
+                }
+                else if (snapshot.state === 0) {
+                    hourMap.get(Math.floor(i/60)).push(1);
+                    //ledStateData.push({input: {time: i}, output: {on: 1}});
+                    //ledStateData.push({input : {t : i/1440, f : 0}, output : {on : 1}});
+                }
+            }
+            prevTime = 0;
+            j++;
+        }
+        for (let i = 0; i <= currTime; i++) {
+
+            if (snapshot.state === 1) {
+                //ledStateData.push({input: {time: i}, output: {off: 0}});
+                hourMap.get(Math.floor(i/60)).push(0);
+                
+                //ledStateData.push({input : {t : i/1440, f : 0}, output : {off : 1}});
+            }
+            else if (snapshot.state === 0) {
+                hourMap.get(Math.floor(i/60)).push(1);
+                //ledStateData.push({input: {time: i}, output: {on: 1}});
+                //ledStateData.push({input : {t : i/1440, f : 0}, output : {on : 1}});
+            }
+        }
+    }
+
+ 
     
     for (let i = 0; i < 24; i++){
         if (hourMap.get(i).length !== 0){

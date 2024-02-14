@@ -4,9 +4,11 @@ const { Timestamp } = require("@firebase/firestore");
 
 exports.toggleLED = async (req, res, next) => {
     try {
+
         let noteDate = Timestamp.fromDate(new Date()).toDate();
         const prevTime = (await db.collection("ledValue").doc("0HsSKXb5PQwovIXWOLQm").get()).data().toggledDate.toDate();
-        
+        console.log(prevTime.toString());
+        console.log(noteDate.toString());
         let userJson = {
             state: req.body.state,
             time: req.body.time,

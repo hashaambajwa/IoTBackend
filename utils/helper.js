@@ -4,7 +4,8 @@ const fireBaseSplitter = (timeString) => {
     var onlyTime = splitString[splitString.length - 1];
     let hour = parseInt(onlyTime.split(":", 1).pop());
     var minute = parseInt(onlyTime.split(":", 2).pop());
-    return [hour, minute];
+    var day = parseInt(splitString[2]);
+    return [hour, minute, day];
 }
 
 
