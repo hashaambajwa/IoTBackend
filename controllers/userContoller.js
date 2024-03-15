@@ -6,17 +6,19 @@ exports.toggleLED = async (req, res, next) => {
     try {
 
         let noteDate = Timestamp.fromDate(new Date()).toDate();
-        const prevTime = (await db.collection("ledValue").doc("0HsSKXb5PQwovIXWOLQm").get()).data().toggledDate.toDate();
+        const prevTime = (await db.collection("devices").doc("yoKfA0fkVemDvq6jBIwE").get()).data().toggledDate.toDate();
         console.log(prevTime.toString());
         console.log(noteDate.toString());
         let userJson = {
-            state: req.body.state,
-            time: req.body.time,
+	    deviceName : "Ceiling Lights", 
+	    deviceType : "Lights",
+            timeUsed : "8h 12min",
+            toggle: req.body.toggle,
             toggledDate: noteDate
         }
     
 
-        let response = await db.collection("ledValue").doc("0HsSKXb5PQwovIXWOLQm").set(userJson);
+        let response = await db.collection("devices").doc("yoKfA0fkVemDvq6jBIwE").set(userJson);
 
         await trainModel(prevTime);
 
@@ -38,7 +40,7 @@ exports.getLedModel = async(req, res, next) => {
         let ledStateData;
 
         try {
-            let data = fs.readFileSync('./ledData.json', 'utf-8');
+            let data = fs.readFileSync('../ledData.json', 'utf-8');
             ledStateData = JSON.parse(data);
             console.log(ledStateData);
             

@@ -8,7 +8,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-const PORT = process.env.PORT || 8000;
+const PORT = 5000;
 
 app.use('/', router);
 

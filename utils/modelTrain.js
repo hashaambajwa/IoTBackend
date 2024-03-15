@@ -10,7 +10,7 @@ const {fireBaseSplitter, timeConverter} = require("./helper.js");
 
 admin.initializeApp({
     credential: admin.credential.cert(credentials),
-    storageBucket: "gs://firestorecrud-5c0ee.appspot.com"
+    storageBucket: "gs://iot-enabled-smart-home.appspot.com"
 })
 
 const db = admin.firestore();
@@ -21,7 +21,7 @@ async function retreiveDB(prevDate) {
     //const snapshot = await db.collection("ledValue").get();
 
     //Add logic later to also check if the days match
-    let snapshot = (await db.collection("ledValue").doc("0HsSKXb5PQwovIXWOLQm").get()).data();
+    let snapshot = (await db.collection("devices").doc("yoKfA0fkVemDvq6jBIwE").get()).data();
     //let ledStateData = [];
     let hourlyData = [];
     let count = 0;
@@ -34,7 +34,7 @@ async function retreiveDB(prevDate) {
 
     let currTime = timeConverter(currHour, currMinute, currHour < 12 ? 'A' : 'P');
     let prevTime = timeConverter(prevHour, prevMinute, prevHour < 12 ? 'A' : 'P');
-   
+
   
     console.log("Prev Time is: " + prevTime + " and Curr Time is: " + currTime);
 
@@ -46,13 +46,13 @@ async function retreiveDB(prevDate) {
     if ((currDay - prevDay) === 0){
         for (let i = prevTime; i <= currTime; i++) {
 
-            if (snapshot.state === 1) {
+            if (snapshot.toggle === 1) {
                 //ledStateData.push({input: {time: i}, output: {off: 0}});
                 hourMap.get(Math.floor(i/60)).push(0);
                 
                 //ledStateData.push({input : {t : i/1440, f : 0}, output : {off : 1}});
             }
-            else if (snapshot.state === 0) {
+            else if (snapshot.toggle === 0) {
                 hourMap.get(Math.floor(i/60)).push(1);
                 //ledStateData.push({input: {time: i}, output: {on: 1}});
                 //ledStateData.push({input : {t : i/1440, f : 0}, output : {on : 1}});
@@ -64,13 +64,13 @@ async function retreiveDB(prevDate) {
         while (j <= (currDay - prevDay)){
             for (let i = prevTime; i <= 1439; i++) {
 
-                if (snapshot.state === 1) {
+                if (snapshot.toggle === 1) {
                     //ledStateData.push({input: {time: i}, output: {off: 0}});
                     hourMap.get(Math.floor(i/60)).push(0);
                     
                     //ledStateData.push({input : {t : i/1440, f : 0}, output : {off : 1}});
                 }
-                else if (snapshot.state === 0) {
+                else if (snapshot.toggle === 0) {
                     hourMap.get(Math.floor(i/60)).push(1);
                     //ledStateData.push({input: {time: i}, output: {on: 1}});
                     //ledStateData.push({input : {t : i/1440, f : 0}, output : {on : 1}});
@@ -81,13 +81,13 @@ async function retreiveDB(prevDate) {
         }
         for (let i = 0; i <= currTime; i++) {
 
-            if (snapshot.state === 1) {
+            if (snapshot.toggle === 1) {
                 //ledStateData.push({input: {time: i}, output: {off: 0}});
                 hourMap.get(Math.floor(i/60)).push(0);
                 
                 //ledStateData.push({input : {t : i/1440, f : 0}, output : {off : 1}});
             }
-            else if (snapshot.state === 0) {
+            else if (snapshot.toggle === 0) {
                 hourMap.get(Math.floor(i/60)).push(1);
                 //ledStateData.push({input: {time: i}, output: {on: 1}});
                 //ledStateData.push({input : {t : i/1440, f : 0}, output : {on : 1}});
@@ -108,7 +108,7 @@ async function retreiveDB(prevDate) {
 
 
     try {
-        const data = fs.readFileSync('./ledData.json', 'utf-8');
+        const data = fs.readFileSync('../ledData.json', 'utf-8');
         const jsonData = JSON.parse(data);
         hourlyData = jsonData.concat(hourlyData);
     }
@@ -174,7 +174,7 @@ async function trainModel(prevDate) {
 
 
             const bufferData = JSON.stringify(trainingData);
-            fs.writeFile('./ledData.json', bufferData, (err) => {
+            fs.writeFile('../ledData.json', bufferData, (err) => {
                 if (err) {
                     console.log("Error writing file");
                 }
