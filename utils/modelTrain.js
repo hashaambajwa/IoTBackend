@@ -1,10 +1,10 @@
 const brain = require("brain.js");
 const fs = require("fs");
-const { Timestamp } = require("@firebase/firestore");
-
+const { Timestamp, addDoc, collection} = require("@firebase/firestore");
 const admin = require("firebase-admin");
 const credentials = require("../config/key.json");
 const {fireBaseSplitter, timeConverter} = require("./helper.js");
+
 
 
 
@@ -16,12 +16,12 @@ admin.initializeApp({
 const db = admin.firestore();
 
 
-async function retreiveDB(prevDate) {
+async function retreiveDB(prevDate, documentID, fileName) {
     //get the current snapshot of teh database
     //const snapshot = await db.collection("ledValue").get();
 
     //Add logic later to also check if the days match
-    let snapshot = (await db.collection("devices").doc("yoKfA0fkVemDvq6jBIwE").get()).data();
+    let snapshot = (await db.collection("devices").doc(documentID).get()).data();
     //let ledStateData = [];
     let hourlyData = [];
     let count = 0;
@@ -94,21 +94,43 @@ async function retreiveDB(prevDate) {
             }
         }
     }
+    console.log(hourMap);
 
- 
-    
     for (let i = 0; i < 24; i++){
-        if (hourMap.get(i).length !== 0){
-            let sum = hourMap.get(i).reduce((a,b) => a + b, 0);
-            let avg = (sum / hourMap.get(i).length) || 0;
-            hourlyData.push({input : {t : i, f : 0}, output : {on : avg}});
+        if (fs.existsSync(fileName)){
+            if (hourMap.get(i).length !== 0){
+                for (let j = 0; j < hourMap.get(i).length; j++) {
+                    if (j % 60 == 0) {
+                        hourlyData.push({input : {t : i, f : 0}, output : {on : hourMap.get(i)[j]}});
+                    }
+                }
+                let sum = hourMap.get(i).reduce((a,b) => a + b, 0);
+                let avg = (sum / hourMap.get(i).length);
+                hourlyData.push({input : {t : i, f : 0}, output : {on : avg}});
+            }
         }
+        else {
+            if (hourMap.get(i).length !== 0){
+                for (let j = 0; j < hourMap.get(i).length; j++) {
+                    if (j % 60 == 0) {
+                        hourlyData.push({input : {t : i, f : 0}, output : {on : hourMap.get(i)[j]}});
+                    }
+                    
+                }
+                let sum = hourMap.get(i).reduce((a,b) => a + b, 0);
+                let avg = (sum / hourMap.get(i).length);
+                hourlyData.push({input : {t : i, f : 0}, output : {on : avg}});
+            }
+            else {
+                hourlyData.push({input : {t : i, f : 0}, output : {on : 0.5}});
+            }
+        }   
     }
     console.log(hourlyData);
 
 
     try {
-        const data = fs.readFileSync('../ledData.json', 'utf-8');
+        const data = fs.readFileSync(fileName, 'utf-8');
         const jsonData = JSON.parse(data);
         hourlyData = jsonData.concat(hourlyData);
     }
@@ -122,7 +144,7 @@ async function retreiveDB(prevDate) {
 
 }
 
-async function trainModel(prevDate) {
+async function trainModel(prevDate, modelName, fileName, documentID ) {
     try {
 
         //Get reference to storage bucket in firebase
@@ -130,7 +152,7 @@ async function trainModel(prevDate) {
 
 
         //Retreive the data in the database
-        let trainingData = await retreiveDB(prevDate);
+        let trainingData = await retreiveDB(prevDate, documentID, fileName);
       
         if (trainingData.length > 168){
             trainingData = trainingData.slice(-168);
@@ -140,7 +162,7 @@ async function trainModel(prevDate) {
         //Create a new NeuralNetwork
 
         net = new brain.NeuralNetwork();
-        await bucket.file("modelJSON.json").download((err, fileBuffer) => {
+        await bucket.file(modelName).download((err, fileBuffer) => {
             if (err) {
                 console.log("Must create new file!")
             }
@@ -163,7 +185,7 @@ async function trainModel(prevDate) {
             let buffer = Buffer.from(jsonString, 'utf-8');
 
 
-            bucket.file("modelJSON.json").save(buffer, {
+            bucket.file(modelName).save(buffer, {
                 contentType: 'application/json'
             }, (err) => {
                 if (err) {
@@ -174,7 +196,7 @@ async function trainModel(prevDate) {
 
 
             const bufferData = JSON.stringify(trainingData);
-            fs.writeFile('../ledData.json', bufferData, (err) => {
+            fs.writeFile(fileName, bufferData, (err) => {
                 if (err) {
                     console.log("Error writing file");
                 }
@@ -186,6 +208,47 @@ async function trainModel(prevDate) {
     }
 }
 
+async function registeredUsers(){
+    try {
+        let snapshot = await db.collection("users").get();
+        return snapshot.docs.map((doc) => doc.data());
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+async function registerUser(user, password){
+    try {
+        await db.collection("users").add(
+            {
+                "username": user,
+                "password": password
+            }
+        );
+        console.log("Document Written");
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+
+async function storeRoutine(routineAction, routineDevice, routineName, time) {
+    try {
+        await db.collection("routines").add(
+            {
+                "action" : routineAction,
+                "device" : routineDevice,
+                "routineName" : routineName,
+                "time" : time
+            }
+        );
+        //extract time from the time specified in the request 
+        console.log("Document Written");
+    } catch (error) {
+        console.log(error);
+    }
+}
+
 
 module.exports = {
     trainModel,
@@ -193,5 +256,8 @@ module.exports = {
     db,
     admin,
     fs,
-    brain
+    brain,
+    registeredUsers,
+    registerUser,
+    storeRoutine
 }
