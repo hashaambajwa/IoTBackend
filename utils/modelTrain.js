@@ -10,11 +10,12 @@ const {fireBaseSplitter, timeConverter} = require("./helper.js");
 
 admin.initializeApp({
     credential: admin.credential.cert(credentials),
-    storageBucket: "gs://iot-enabled-smart-home.appspot.com"
+    storageBucket: "gs://iot-enabled-smart-home.appspot.com",
+    databaseURL: 'https://iot-enabled-smart-home-default-rtdb.firebaseio.com/'
 })
 
 const db = admin.firestore();
-
+const realtimeDB = admin.database();
 
 async function retreiveDB(prevDate, documentID, fileName) {
     //get the current snapshot of teh database
@@ -249,6 +250,13 @@ async function storeRoutine(routineAction, routineDevice, routineName, time) {
     }
 }
 
+const realtimeUpdate = async(toggleValue, deviceName) => {
+    try {
+        await realtimeDB.ref('devices').child(deviceName).child('toggle').set(toggleValue);
+    } catch(error){
+        console.error(error);
+    }
+}
 
 module.exports = {
     trainModel,
@@ -259,5 +267,7 @@ module.exports = {
     brain,
     registeredUsers,
     registerUser,
-    storeRoutine
+    storeRoutine,
+    realtimeUpdate,
+    realtimeDB
 }

@@ -13,8 +13,12 @@ router.post('/IoTApp/signUp', userController.signup);
 router.post('/IoTApp/signIn', userController.signin);
 
 router.post('/IoTApp/routines', userController.scheduleRoutine);
+
+router.post('/IoTApp/toggleFlame', userController.toggleFlame);
+
 module.exports = {
     router
 };
+
 
 //router.post('/IoTApp/toggleLED')

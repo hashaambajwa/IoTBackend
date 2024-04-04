@@ -1,5 +1,5 @@
 
-const {trainModel, db, fs, brain, admin, registeredUsers,registerUser,storeRoutine } = require("../utils/modelTrain.js");
+const {realtimeDB, trainModel, db, fs, brain, admin, registeredUsers,registerUser,storeRoutine, realtimeUpdate } = require("../utils/modelTrain.js");
 const { Timestamp } = require("@firebase/firestore");
 const schedule = require('node-schedule');
 
@@ -20,6 +20,7 @@ exports.toggleLED = async (req, res, next) => {
     
 
         let response = await db.collection("devices").doc("yoKfA0fkVemDvq6jBIwE").set(userJson);
+	await realtimeUpdate(req.body.toggle, 'Ceiling Lights');
         await trainModel(prevTime, 'modelJSON.json', '../ledData.json', 'yoKfA0fkVemDvq6jBIwE');
 
         res.send(response);
@@ -100,7 +101,7 @@ exports.toggleFloorLight = async (req, res) => {
     
 
         let response = await db.collection("devices").doc("fHOA9x1sdFOaQQvMjJ4j").set(userJson);
-
+	await realtimeUpdate(req.body.toggle, 'Floor Lights');
         await trainModel(prevTime, 'modelFloorJSON.json', '../floorData.json', 'fHOA9x1sdFOaQQvMjJ4j');
         res.send(response);
 
@@ -201,8 +202,10 @@ exports.scheduleRoutine = async (req, res) => {
 		    let timeToggled =  Timestamp.fromDate(new Date()).toDate();
                     if (routineAction.toLowerCase().includes("turn off")){
                         await db.collection("devices").doc(document.id).update({toggle: 0, toggledDate : timeToggled});
+			await realtimeUpdate(0, routineDevice);
                     }else if (routineAction.toLowerCase().includes("turn on")){
                         await db.collection("devices").doc(document.id).update({toggle: 1, toggledDate : timeToggled});
+			await realtimeUpdate(1, routineDevice);
                     }
                 })
             })
@@ -215,4 +218,27 @@ exports.scheduleRoutine = async (req, res) => {
     } catch (error) {
         res.status(400);
     }
+}
+
+
+
+exports.toggleFlame = async (req, res) => {
+    
+    try {
+        if (req.body.toggle === null){
+            res.status(400);
+            res.send("Improper Request format");
+        }
+        else {
+	    await db.collection("devices").doc("LupXUFpTEaBcqlN7K6UI").update({
+                toggle : req.body.toggle
+            });
+            await realtimeDB.ref('devices').child('Flame Sensor').set(req.body.toggle);
+            res.status(200);
+            res.send('Good Request');
+        }
+    } catch (error) {
+        res.status(500);
+    }
+  
 }
